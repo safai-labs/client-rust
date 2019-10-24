@@ -5,7 +5,8 @@
 mod common;
 
 use crate::common::parse_args;
-use tikv_client::{Config, Key, KvPair, RawClient as Client, Result, ToOwnedRange, Value};
+use std::ops::{Bound, RangeInclusive};
+use tikv_client::{Config, Key, KeyRange, KvPair, RawClient as Client, Result, ToOwnedRange, Value, BoundRange};
 
 const KEY: &str = "TiKV";
 const VALUE: &str = "Rust";
@@ -83,21 +84,17 @@ async fn main() -> Result<()> {
 
     // Scanning a range of keys is also possible giving it two bounds
     // it will returns all entries between these two.
-    let start = "k1";
-    let end = "k2";
+    let start="k1";
+    let end="k2";
+    let range = start..=end;
     let pairs = client
         .with_key_only(true)
-        .scan((start..=end).to_owned(), 10)
+        .scan(range.into_keys().unwrap(), 10)
         .await
         .expect("Could not scan");
 
     let keys: Vec<_> = pairs.into_iter().map(|p| p.key().clone()).collect();
-    assert_eq!(
-        &keys,
-        &[Key::from("k1".to_owned()), Key::from("k2".to_owned())]
-    );
-    println!("Scaning from {:?} to {:?} gives: {:?}", start, end, keys);
-
+    println!("Scanning from {:?} to {:?} gives: {:?}", start, end, keys);
     // Cleanly exit.
     Ok(())
 }
